@@ -5,10 +5,22 @@ import { useAuth } from '@/components/providers'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, LogOut, Lock } from 'lucide-react'
+import { Plus, LogOut, Lock, Trash2 } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { format } from 'date-fns'
+import { toast } from 'sonner'
 
 interface NoteMetadata {
   id: string
@@ -41,6 +53,22 @@ export default function Dashboard() {
     if (data) setNotes(data)
   }
 
+  const handleDelete = async (noteId: string) => {
+    try {
+        const { error } = await supabase
+            .from('notes')
+            .delete()
+            .eq('id', noteId)
+        
+        if (error) throw error
+        
+        setNotes(prev => prev.filter(n => n.id !== noteId))
+        toast.success('Note deleted')
+    } catch (err: any) {
+        toast.error('Delete failed', { description: err.message })
+    }
+  }
+
   if (loading) return <div className="p-8 text-center text-primary animate-pulse">Loading Identity...</div>
 
   return (
@@ -62,10 +90,10 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="grid gap-3">
-             {notes.map((note) => (
-                <Link key={note.id} href={`/note/${note.id}`}>
-                    <Card className="hover:border-primary/50 transition-colors cursor-pointer active:scale-[0.99] transition-transform">
-                        <CardHeader className="p-4 pb-2">
+              {notes.map((note) => (
+                <Card key={note.id} className="group relative hover:border-primary/50 transition-colors">
+                     <Link href={`/note/${note.id}`} className="block h-full"> 
+                        <CardHeader className="p-4 pb-2 pr-12">
                            <CardTitle className="text-lg leading-tight truncate">{note.title || 'Untitled'}</CardTitle>
                         </CardHeader>
                         <CardFooter className="p-4 pt-0">
@@ -73,8 +101,43 @@ export default function Dashboard() {
                                 {format(new Date(note.created_at), 'MMM d, yyyy • h:mm a')}
                             </span>
                         </CardFooter>
-                    </Card>
-                </Link>
+                    </Link>
+
+                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                           <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                              onClick={(e) => e.stopPropagation()} // Prevent Link click, though Button is outside Link now so redundant but safe
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Note?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will permanently delete "{note.title}"
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction 
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleDelete(note.id)
+                                    }} 
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                    Delete
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                </Card>
              ))}
           </div>
         )}

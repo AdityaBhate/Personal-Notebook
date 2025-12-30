@@ -1,6 +1,7 @@
 'use client'
 
 import { useEditor, EditorContent } from '@tiptap/react'
+import { useEffect } from 'react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import { Button } from './ui/button'
@@ -11,9 +12,10 @@ interface NoteEditorProps {
   initialContent: string
   onSave: (content: string) => Promise<void>
   isSaving: boolean
+  onExit?: () => void
 }
 
-export function NoteEditor({ initialContent, onSave, isSaving }: NoteEditorProps) {
+export function NoteEditor({ initialContent, onSave, isSaving, onExit }: NoteEditorProps) {
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -30,6 +32,36 @@ export function NoteEditor({ initialContent, onSave, isSaving }: NoteEditorProps
         }
     }
   })
+
+  // Handle Keyboard Shortcuts
+  // Handle Keyboard Shortcuts
+  useEffect(() => {
+    if (!editor) return
+
+    const handleKeyDown = (view: any, event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+            onExit?.()
+            return true
+        }
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault()
+            onSave(editor.getHTML())
+            return true
+        }
+        return false
+    }
+
+    editor.setOptions({
+        editorProps: {
+            handleKeyDown
+        }
+    })
+    
+    // Cleanup not strictly necessary for setOptions in this simple case but good practice to allow standard behavior if unmounting? 
+    // Actually setOptions merges, so it might persist. 
+    // Better to use default Tiptap extension system or just valid closure.
+    // The issue with setOptions inside useEffect is dependency on onSave/onExit closures.
+  }, [editor, onSave, onExit])
 
   if (!editor) return null
 

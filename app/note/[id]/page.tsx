@@ -10,7 +10,18 @@ import { NoteEditor } from '@/components/note-editor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft, Lock, Unlock, Loader2 } from 'lucide-react'
+import { ArrowLeft, Lock, Unlock, Loader2, Trash2 } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -123,6 +134,21 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
     setSaving(false)
   }
 
+  const handleDelete = async () => {
+    try {
+        const { error } = await supabase
+            .from('notes')
+            .delete()
+            .eq('id', id)
+        
+        if (error) throw error
+        toast.success('Note deleted')
+        router.push('/')
+    } catch (err: any) {
+        toast.error('Delete failed', { description: err.message })
+    }
+  }
+
   if (loading || authLoading) {
     return <div className="h-screen flex items-center justify-center text-primary"><Loader2 className="animate-spin w-8 h-8"/></div>
   }
@@ -178,13 +204,36 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                  Decrypted
              </div>
-         </div>
+              
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors ml-2">
+                        <Trash2 className="w-4 h-4" />
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete your note from our servers.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+          </div>
          
          <div className="flex-1 overflow-hidden">
             <NoteEditor 
                 initialContent={content} 
                 onSave={handleSave} 
                 isSaving={saving} 
+                onExit={() => router.push('/')}
             />
          </div>
       </div>
