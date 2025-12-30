@@ -44,6 +44,20 @@ export default function Dashboard() {
     }
   }, [user, loading, router])
 
+  // Global Shortcut for New Note
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+        // Check for Ctrl+n or Cmd+n (for Mac support)
+        if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+            e.preventDefault()
+            router.push('/new')
+        }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [router])
+
   const fetchNotes = async () => {
     const { data, error } = await supabase
       .from('notes')

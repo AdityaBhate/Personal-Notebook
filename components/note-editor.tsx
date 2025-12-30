@@ -18,6 +18,7 @@ interface NoteEditorProps {
 export function NoteEditor({ initialContent, onSave, isSaving, onExit }: NoteEditorProps) {
   const editor = useEditor({
     immediatelyRender: false,
+    autofocus: 'end',
     extensions: [
       StarterKit,
       Placeholder.configure({
